@@ -220,35 +220,35 @@ if uploaded:
             weighted = float(calc_df["成绩×学分"].sum())
             B = weighted / total_credit if total_credit else 0
 
-        st.markdown(
-            f"""
-            <div class="result-card">
-              <div class="result-label">本次计算结果 · 成绩 B</div>
-              <div class="result-number">{B:.2f}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            st.markdown(
+                f"""
+                <div class="result-card">
+                  <div class="result-label">本次计算结果 · 成绩 B</div>
+                  <div class="result-number">{B:.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        a, b, c = st.columns(3)
-        a.metric("课程数", len(calc_df))
-        b.metric("总学分", f"{total_credit:.2f}")
-        c.metric("加权总分", f"{weighted:.2f}")
+            a, b, c = st.columns(3)
+            a.metric("课程数", len(calc_df))
+            b.metric("总学分", f"{total_credit:.2f}")
+            c.metric("加权总分", f"{weighted:.2f}")
 
-        st.subheader("📋 识别明细")
-        show = calc_df[["课程名称", "学分", "原始成绩", "换算成绩", "成绩×学分"]].copy()
-        st.dataframe(show, use_container_width=True, hide_index=True)
+            st.subheader("📋 识别明细")
+            show = calc_df[["课程名称", "学分", "原始成绩", "换算成绩", "成绩×学分"]].copy()
+            st.dataframe(show, use_container_width=True, hide_index=True)
 
-        csv = show.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            "⬇️ 下载计算明细",
-            data=csv,
-            file_name="研究生奖学金成绩B计算明细.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
+            csv = show.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                "⬇️ 下载计算明细",
+                data=csv,
+                file_name="研究生奖学金成绩B计算明细.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
 
-        st.info("请在提交奖学金材料前核对课程、学分及成绩识别结果。")
+            st.info("请在提交奖学金材料前核对课程、学分及成绩识别结果。")
 
 st.markdown(
     '<div class="footer">江苏科技大学环境与化学工程学院 · 研究生奖学金成绩 B 计算器</div>',
