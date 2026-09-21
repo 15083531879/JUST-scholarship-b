@@ -39,7 +39,6 @@ st.markdown("""
 .school {font-size:15px; color:#666; margin-bottom:3px;}
 .title {font-size:27px; font-weight:800; line-height:1.25;}
 .subtitle {font-size:15px; color:#666; margin-top:4px;}
-.upload-card {padding:20px; border:1px solid #e6eaf0; border-radius:16px; background:#fff;}
 .result-card {padding:24px; border-radius:18px; background:linear-gradient(135deg,#f5fbff,#f8fbff); border:1px solid #d8eaf5; text-align:center; margin:18px 0;}
 .result-label {font-size:15px; color:#5f6b76;}
 .result-number {font-size:56px; font-weight:850; letter-spacing:-1px;}
