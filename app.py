@@ -206,19 +206,34 @@ if uploaded:
 
             if all_df["学期"].notna().any():
                 calc_df = all_df[all_df["学期"].isin([1, 2])].copy()
+
                 if len(calc_df) == 0:
                     calc_df = all_df.copy()
-                    st.warning("未能可靠识别第一学年，当前按全部识别课程计算，请核对。")
+                    st.warning(
+                        "未能可靠识别第一学年，当前按全部识别课程计算，请核对。"
+                    )
                 else:
-                    st.success("已按第 1、2 学期识别第一学年课程。")
+                    st.success(
+                        "已按第 1、2 学期识别第一学年课程。"
+                    )
             else:
                 calc_df = all_df.copy()
-                st.warning("成绩单缺少可识别的学期信息，当前按全部课程计算，请核对。")
+                st.warning(
+                    "成绩单缺少可识别的学期信息，当前按全部课程计算，请核对。"
+                )
 
-            calc_df["成绩×学分"] = calc_df["换算成绩"] * calc_df["学分"]
+            calc_df["成绩×学分"] = (
+                calc_df["换算成绩"] * calc_df["学分"]
+            )
+
             total_credit = float(calc_df["学分"].sum())
             weighted = float(calc_df["成绩×学分"].sum())
-            B = weighted / total_credit if total_credit else 0
+
+            B = (
+                weighted / total_credit
+                if total_credit
+                else 0
+            )
 
             st.markdown(
                 f"""
@@ -231,15 +246,44 @@ if uploaded:
             )
 
             a, b, c = st.columns(3)
-            a.metric("课程数", len(calc_df))
-            b.metric("总学分", f"{total_credit:.2f}")
-            c.metric("加权总分", f"{weighted:.2f}")
+
+            a.metric(
+                "课程数",
+                len(calc_df),
+            )
+
+            b.metric(
+                "总学分",
+                f"{total_credit:.2f}",
+            )
+
+            c.metric(
+                "加权总分",
+                f"{weighted:.2f}",
+            )
 
             st.subheader("📋 识别明细")
-            show = calc_df[["课程名称", "学分", "原始成绩", "换算成绩", "成绩×学分"]].copy()
-            st.dataframe(show, use_container_width=True, hide_index=True)
 
-            csv = show.to_csv(index=False).encode("utf-8-sig")
+            show = calc_df[
+                [
+                    "课程名称",
+                    "学分",
+                    "原始成绩",
+                    "换算成绩",
+                    "成绩×学分",
+                ]
+            ].copy()
+
+            st.dataframe(
+                show,
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            csv = show.to_csv(
+                index=False
+            ).encode("utf-8-sig")
+
             st.download_button(
                 "⬇️ 下载计算明细",
                 data=csv,
@@ -248,9 +292,17 @@ if uploaded:
                 use_container_width=True,
             )
 
-            st.info("请在提交奖学金材料前核对课程、学分及成绩识别结果。")
+            st.info(
+                "请在提交奖学金材料前核对课程、学分及成绩识别结果。"
+            )
+
+    except Exception as e:
+        st.error(
+            f"处理成绩单时发生错误：{e}"
+        )
+
 
 st.markdown(
     '<div class="footer">江苏科技大学环境与化学工程学院 · 研究生奖学金成绩 B 计算器</div>',
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
