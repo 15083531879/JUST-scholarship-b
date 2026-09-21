@@ -28,7 +28,12 @@ LOGO = "static/校徽.png"
 
 st.markdown("""
 <style>
-.block-container {max-width: 900px; padding-top: 1.2rem; padding-bottom: 3rem;}
+.block-container {
+    max-width: 900px;
+    padding-top: 1.2rem;
+    padding-bottom: 3rem;
+    overflow: visible;
+}
 .header {display:flex; align-items:center; gap:18px; padding:8px 0 18px;}
 .header img {width:78px; height:78px; object-fit:contain;}
 .school {font-size:15px; color:#666; margin-bottom:3px;}
@@ -70,13 +75,12 @@ with st.expander("📌 计算规则", expanded=False):
 - 建议使用研究生管理系统导出的 PDF 或 DOCX 成绩单。
 """)
 
-st.markdown('<div class="upload-card">', unsafe_allow_html=True)
-uploaded = st.file_uploader(
-    "📄 上传成绩单",
-    type=["pdf", "docx", "doc"],
-    help="支持 PDF、DOCX；DOC 格式需要部署环境安装 LibreOffice。",
-)
-st.markdown('</div>', unsafe_allow_html=True)
+with st.container(border=True):
+    uploaded = st.file_uploader(
+        "📄 上传成绩单",
+        type=["pdf", "docx", "doc"],
+        help="支持 PDF、DOCX；DOC 格式需要部署环境安装 LibreOffice。",
+    )
 
 def norm(x):
     return re.sub(r"\s+", "", str(x or "")).strip()
