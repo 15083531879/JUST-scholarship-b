@@ -25,7 +25,6 @@ GRADE_MAP = {
 }
 
 LOGO = "static/校徽.png"
-
 st.markdown("""
 <style>
 .block-container {
@@ -34,45 +33,74 @@ st.markdown("""
     padding-bottom: 3rem;
     overflow: visible;
 }
-.header {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 8px 0 18px;
-    position: relative;
-    z-index: 1;
-}
-.header img {width:78px; height:78px; object-fit:contain;}
-.school {font-size:15px; color:#666; margin-bottom:3px;}
-.title {font-size:27px; font-weight:800; line-height:1.25;}
-.subtitle {font-size:15px; color:#666; margin-top:4px;}
-.result-card {padding:24px; border-radius:18px; background:linear-gradient(135deg,#f5fbff,#f8fbff); border:1px solid #d8eaf5; text-align:center; margin:18px 0;}
-.result-label {font-size:15px; color:#5f6b76;}
-.result-number {font-size:56px; font-weight:850; letter-spacing:-1px;}
-.footer {font-size:12px; color:#8a8f95; text-align:center; margin-top:30px;}
-div[data-testid="stMetric"] {background:#fafbfd; padding:12px; border-radius:12px; border:1px solid #edf0f3;}
 
-[data-testid="stExpander"] {
-    position: relative;
-    z-index: 10;
+.school {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.title {
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.subtitle {
+    font-size: 15px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.result-card {
+    padding: 24px;
+    border-radius: 18px;
+    background: linear-gradient(135deg,#f5fbff,#f8fbff);
+    border: 1px solid #d8eaf5;
+    text-align: center;
+    margin: 18px 0;
+}
+
+.result-label {
+    font-size: 15px;
+    color: #5f6b76;
+}
+
+.result-number {
+    font-size: 56px;
+    font-weight: 850;
+    letter-spacing: -1px;
+}
+
+.footer {
+    font-size: 12px;
+    color: #8a8f95;
+    text-align: center;
+    margin-top: 30px;
+}
+
+div[data-testid="stMetric"] {
+    background: #fafbfd;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #edf0f3;
 }
 </style>
 """, unsafe_allow_html=True)
 
 if Path(LOGO).exists():
-    st.markdown(
-        f"""
-        <div class="header">
-          <img src="{LOGO}">
-          <div>
-            <div class="school">江苏科技大学 · 环境与化学工程学院</div>
-            <div class="title">研究生奖学金成绩 B 计算器</div>
-            <div class="subtitle">上传成绩单，自动识别第一学年课程并计算成绩 B</div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.image(LOGO, width=78)
+
+st.markdown(
+    """
+    <div class="school">江苏科技大学 · 环境与化学工程学院</div>
+    <div class="title">研究生奖学金成绩 B 计算器</div>
+    <div class="subtitle">上传成绩单，自动识别第一学年课程并计算成绩 B</div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 with st.expander("📌 计算规则", expanded=False):
     st.markdown("""
