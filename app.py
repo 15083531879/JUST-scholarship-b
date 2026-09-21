@@ -34,7 +34,14 @@ st.markdown("""
     padding-bottom: 3rem;
     overflow: visible;
 }
-.header {display:flex; align-items:center; gap:18px; padding:8px 0 18px;}
+.header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 8px 0 18px;
+    position: relative;
+    z-index: 1;
+}
 .header img {width:78px; height:78px; object-fit:contain;}
 .school {font-size:15px; color:#666; margin-bottom:3px;}
 .title {font-size:27px; font-weight:800; line-height:1.25;}
@@ -44,6 +51,11 @@ st.markdown("""
 .result-number {font-size:56px; font-weight:850; letter-spacing:-1px;}
 .footer {font-size:12px; color:#8a8f95; text-align:center; margin-top:30px;}
 div[data-testid="stMetric"] {background:#fafbfd; padding:12px; border-radius:12px; border:1px solid #edf0f3;}
+
+[data-testid="stExpander"] {
+    position: relative;
+    z-index: 10;
+}
 </style>
 """, unsafe_allow_html=True)
 
