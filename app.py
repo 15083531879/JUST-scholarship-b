@@ -51,6 +51,7 @@ LOGO = "static/校徽.png"
 st.markdown(
     """
 <style>
+
 .block-container {
     max-width: 900px;
     padding-top: 1.2rem;
@@ -58,11 +59,15 @@ st.markdown(
     overflow: visible;
 }
 
+/* 学校名称 */
+
 .school {
     font-size: 15px;
     color: #666;
     margin-bottom: 3px;
 }
+
+/* 页面标题 */
 
 .title {
     font-size: 27px;
@@ -70,16 +75,27 @@ st.markdown(
     line-height: 1.25;
 }
 
+/* 副标题 */
+
 .subtitle {
     font-size: 15px;
     color: #666;
     margin-top: 4px;
 }
 
+
+/* ============================================================
+   成绩结果卡片
+   ============================================================ */
+
 .result-card {
     padding: 24px;
     border-radius: 18px;
-    background: linear-gradient(135deg, #f5fbff, #f8fbff);
+    background: linear-gradient(
+        135deg,
+        #f5fbff,
+        #f8fbff
+    );
     border: 1px solid #d8eaf5;
     text-align: center;
     margin: 18px 0;
@@ -88,19 +104,25 @@ st.markdown(
 .result-label {
     font-size: 15px;
     color: #5f6b76;
+    margin-bottom: 8px;
 }
 
 .result-number {
-    font-size: 56px;
-    font-weight: 850;
-    letter-spacing: -1px;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
 .result-point {
-    font-size: 18px;
+    font-size: 20px;
     color: #5f6b76;
-    margin-top: 8px;
+    margin-top: 10px;
 }
+
+
+/* ============================================================
+   页脚
+   ============================================================ */
 
 .footer {
     font-size: 12px;
@@ -109,12 +131,18 @@ st.markdown(
     margin-top: 30px;
 }
 
+
+/* ============================================================
+   Metric
+   ============================================================ */
+
 div[data-testid="stMetric"] {
     background: #fafbfd;
     padding: 12px;
     border-radius: 12px;
     border: 1px solid #edf0f3;
 }
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -126,18 +154,30 @@ div[data-testid="stMetric"] {
 # ============================================================
 
 if Path(LOGO).exists():
-    st.image(LOGO, width=78)
+
+    st.image(
+        LOGO,
+        width=78,
+    )
+
 
 st.markdown(
     """
-    <div class="school">江苏科技大学 · 环境与化学工程学院</div>
-    <div class="title">研究生奖学金成绩 B 计算器</div>
+    <div class="school">
+        江苏科技大学 · 环境与化学工程学院
+    </div>
+
+    <div class="title">
+        研究生奖学金成绩 B 计算器
+    </div>
+
     <div class="subtitle">
         上传成绩单，自动识别第一学年课程并计算成绩 B
     </div>
     """,
     unsafe_allow_html=True,
 )
+
 
 st.markdown(
     "<div style='height: 12px;'></div>",
@@ -149,7 +189,10 @@ st.markdown(
 # 计算规则说明
 # ============================================================
 
-with st.expander("📌 计算规则", expanded=False):
+with st.expander(
+    "📌 计算规则",
+    expanded=False,
+):
 
     st.markdown(
         """
@@ -177,7 +220,11 @@ with st.container(border=True):
 
     uploaded = st.file_uploader(
         "📄 上传成绩单",
-        type=["pdf", "docx", "doc"],
+        type=[
+            "pdf",
+            "docx",
+            "doc",
+        ],
         help="支持 PDF、DOCX；DOC 格式需要部署环境安装 LibreOffice。",
     )
 
@@ -190,7 +237,12 @@ def norm(x):
     """
     清理字符串中的空白字符。
     """
-    return re.sub(r"\s+", "", str(x or "")).strip()
+
+    return re.sub(
+        r"\s+",
+        "",
+        str(x or ""),
+    ).strip()
 
 
 def grade_value(x):
@@ -198,49 +250,82 @@ def grade_value(x):
     将成绩转换为数值。
 
     例如：
+
     优秀 -> 95
     良好 -> 85
     90 -> 90
     89.5 -> 89.5
     """
+
     s = norm(x)
 
     if not s:
         return None
 
     if s in GRADE_MAP:
-        return float(GRADE_MAP[s])
 
-    m = re.search(r"-?\d+(?:\.\d+)?", s)
+        return float(
+            GRADE_MAP[s]
+        )
 
-    return float(m.group()) if m else None
+    m = re.search(
+        r"-?\d+(?:\.\d+)?",
+        s,
+    )
+
+    if m:
+
+        return float(
+            m.group()
+        )
+
+    return None
 
 
 def credit_value(x):
     """
     从学分字段中提取数字。
     """
-    m = re.search(r"\d+(?:\.\d+)?", norm(x))
 
-    return float(m.group()) if m else None
+    m = re.search(
+        r"\d+(?:\.\d+)?",
+        norm(x),
+    )
+
+    if m:
+
+        return float(
+            m.group()
+        )
+
+    return None
 
 
 def semester_value(x):
     """
     识别第1、2学期。
     """
+
     s = norm(x)
 
     if (
         "一" in s
-        or re.search(r"(^|[^0-9])1([^0-9]|$)", s)
+        or re.search(
+            r"(^|[^0-9])1([^0-9]|$)",
+            s,
+        )
     ):
+
         return 1
 
     if (
         "二" in s
-        or re.search(r"(^|[^0-9])2([^0-9]|$)", s)
+        or re.search(
+            r"(^|[^0-9])2([^0-9]|$)",
+            s,
+        )
     ):
+
         return 2
 
     return None
@@ -250,11 +335,16 @@ def find_col(headers, names):
     """
     根据表头名称寻找列位置。
     """
+
     for i, h in enumerate(headers):
 
         h = norm(h)
 
-        if any(name in h for name in names):
+        if any(
+            name in h
+            for name in names
+        ):
+
             return i
 
     return None
@@ -280,7 +370,10 @@ def parse_rows(rows):
         ]
 
         if any(vals):
-            cleaned.append(vals)
+
+            cleaned.append(
+                vals
+            )
 
     # --------------------------------------------------------
     # 第二步：寻找成绩单表头
@@ -288,26 +381,40 @@ def parse_rows(rows):
 
     header = None
 
-    for hi, row in enumerate(cleaned[:20]):
+    for hi, row in enumerate(
+        cleaned[:20]
+    ):
 
         ci = find_col(
             row,
-            ["课程名称", "课程名", "课程"]
+            [
+                "课程名称",
+                "课程名",
+                "课程",
+            ],
         )
 
         cr = find_col(
             row,
-            ["学分"]
+            [
+                "学分",
+            ],
         )
 
         se = find_col(
             row,
-            ["选修学期", "开课学期", "学期"]
+            [
+                "选修学期",
+                "开课学期",
+                "学期",
+            ],
         )
 
         gr = find_col(
             row,
-            ["成绩"]
+            [
+                "成绩",
+            ],
         )
 
         if (
@@ -315,6 +422,7 @@ def parse_rows(rows):
             and cr is not None
             and gr is not None
         ):
+
             header = (
                 hi,
                 ci,
@@ -340,19 +448,23 @@ def parse_rows(rows):
     # 第三步：逐行解析课程
     # --------------------------------------------------------
 
-    for row in cleaned[hi + 1:]:
+    for row in cleaned[
+        hi + 1:
+    ]:
 
         need = max(
             ci,
             cr,
             gr,
-            se if se is not None else 0
+            se if se is not None else 0,
         ) + 1
 
         # 如果某一行列数不足，用空字符串补齐
-        row = row + [""] * max(
+        row = row + [
+            ""
+        ] * max(
             0,
-            need - len(row)
+            need - len(row),
         )
 
         course = row[ci]
@@ -377,15 +489,22 @@ def parse_rows(rows):
             raw
         )
 
+        # ----------------------------------------------------
         # 无效记录跳过
+        # ----------------------------------------------------
+
         if (
             not course
             or credit is None
             or score is None
         ):
+
             continue
 
+        # ----------------------------------------------------
         # 保存有效课程
+        # ----------------------------------------------------
+
         records.append(
             {
                 "课程名称": course,
@@ -417,7 +536,9 @@ def parse_rows(rows):
     for record in records:
 
         course_name = norm(
-            str(record["课程名称"])
+            str(
+                record["课程名称"]
+            )
         )
 
         if (
@@ -490,7 +611,9 @@ def parse_pdf(data):
 
             for table in tables:
 
-                rows.extend(table)
+                rows.extend(
+                    table
+                )
 
     return parse_rows(rows)
 
@@ -508,7 +631,9 @@ def convert_doc(data):
             / "input.doc"
         )
 
-        src.write_bytes(data)
+        src.write_bytes(
+            data
+        )
 
         p = subprocess.run(
             [
@@ -602,11 +727,16 @@ if uploaded:
             # 第1、2学期 = 第一学年
             # ------------------------------------------------
 
-            if all_df["学期"].notna().any():
+            if all_df[
+                "学期"
+            ].notna().any():
 
                 calc_df = all_df[
                     all_df["学期"].isin(
-                        [1, 2]
+                        [
+                            1,
+                            2,
+                        ]
                     )
                 ].copy()
 
@@ -663,11 +793,16 @@ if uploaded:
             # 成绩 B
             # ------------------------------------------------
 
-            B = (
-                weighted / total_credit
-                if total_credit
-                else 0
-            )
+            if total_credit:
+
+                B = (
+                    weighted
+                    / total_credit
+                )
+
+            else:
+
+                B = 0
 
             # ------------------------------------------------
             # 绩点
@@ -684,32 +819,35 @@ if uploaded:
             # 结果显示
             # =================================================
 
-           st.markdown(
-    f"""
-    <div class="result-card">
+            st.markdown(
+                f"""
+                <div class="result-card">
 
-        <div class="result-label">
-            研究生奖学金成绩计算结果
-        </div>
+                    <div class="result-label">
+                        研究生奖学金成绩计算结果
+                    </div>
 
-        <div class="result-number">
-            加权成绩 B：{B:.2f}
-        </div>
+                    <div class="result-number">
+                        加权成绩 B：{B:.2f}
+                    </div>
 
-        <div class="result-point">
-            绩点：<strong>{grade_point:.3f}</strong>
-        </div>
+                    <div class="result-point">
+                        绩点：
+                        <strong>
+                            {grade_point:.3f}
+                        </strong>
+                    </div>
 
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
             # =================================================
-            # 四项统计指标
+            # 三项统计指标
             # =================================================
 
-            a, b, c, d = st.columns(4)
+            a, b, c = st.columns(3)
 
             a.metric(
                 "课程数",
@@ -724,11 +862,6 @@ if uploaded:
             c.metric(
                 "加权总分",
                 f"{weighted:.2f}",
-            )
-
-            d.metric(
-                "绩点",
-                f"{grade_point:.3f}",
             )
 
             # =================================================
@@ -749,6 +882,28 @@ if uploaded:
                 ]
             ].copy()
 
+            # ------------------------------------------------
+            # 保留合理的小数位
+            # ------------------------------------------------
+
+            show["学分"] = show[
+                "学分"
+            ].map(
+                lambda x: f"{x:.2f}"
+            )
+
+            show["换算成绩"] = show[
+                "换算成绩"
+            ].map(
+                lambda x: f"{x:.2f}"
+            )
+
+            show["成绩×学分"] = show[
+                "成绩×学分"
+            ].map(
+                lambda x: f"{x:.2f}"
+            )
+
             st.dataframe(
                 show,
                 use_container_width=True,
@@ -764,7 +919,9 @@ if uploaded:
                 .to_csv(
                     index=False
                 )
-                .encode("utf-8-sig")
+                .encode(
+                    "utf-8-sig"
+                )
             )
 
             st.download_button(
