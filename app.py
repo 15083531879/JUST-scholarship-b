@@ -684,27 +684,26 @@ if uploaded:
             # 结果显示
             # =================================================
 
-            st.markdown(
-                f"""
-                <div class="result-card">
+           st.markdown(
+    f"""
+    <div class="result-card">
 
-                    <div class="result-label">
-                        本次计算结果 · 成绩 B
-                    </div>
+        <div class="result-label">
+            研究生奖学金成绩计算结果
+        </div>
 
-                    <div class="result-number">
-                        {B:.2f}
-                    </div>
+        <div class="result-number">
+            加权成绩 B：{B:.2f}
+        </div>
 
-                    <div class="result-point">
-                        绩点 = B ÷ 10 − 5 =
-                        <strong>{grade_point:.3f}</strong>
-                    </div>
+        <div class="result-point">
+            绩点：<strong>{grade_point:.3f}</strong>
+        </div>
 
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
             # =================================================
             # 四项统计指标
