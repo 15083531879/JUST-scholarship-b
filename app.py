@@ -154,7 +154,6 @@ div[data-testid="stMetric"] {
 # ============================================================
 
 if Path(LOGO).exists():
-
     st.image(
         LOGO,
         width=78,
@@ -193,7 +192,6 @@ with st.expander(
     "📌 计算规则",
     expanded=False,
 ):
-
     st.markdown(
         """
 **成绩 B：**
@@ -217,7 +215,6 @@ with st.expander(
 # ============================================================
 
 with st.container(border=True):
-
     uploaded = st.file_uploader(
         "📄 上传成绩单",
         type=[
@@ -237,67 +234,44 @@ def norm(x):
     """
     清理字符串中的空白字符。
     """
-
-    return re.sub(
-        r"\s+",
-        "",
-        str(x or ""),
-    ).strip()
+    return re.sub(r"\s+", "", str(x or "")).strip()
 
 
 def grade_value(x):
     """
-    将成绩转换为数值。
-
-    例如：
-
-    优秀 -> 95
-    良好 -> 85
-    90 -> 90
-    89.5 -> 89.5
+    将成绩转换为数值（支持百分制数字、等级制等）。
     """
-
     s = norm(x)
-
     if not s:
         return None
 
-    if s in GRADE_MAP:
+    # 1. 优先提取 0-100 之间的数字（如 85.5、90）
+    nums = re.findall(r"\d+(?:\.\d+)?", s)
+    for n in nums:
+        val = float(n)
+        if 0 <= val <= 100:
+            return val
 
-        return float(
-            GRADE_MAP[s]
-        )
-
-    m = re.search(
-        r"-?\d+(?:\.\d+)?",
-        s,
-    )
-
-    if m:
-
-        return float(
-            m.group()
-        )
+    # 2. 匹配等级成绩（优秀/良好/中/及格/不及格等）
+    for k, v in GRADE_MAP.items():
+        if k in s:
+            return float(v)
 
     return None
 
 
 def credit_value(x):
     """
-    从学分字段中提取数字。
+    从学分字段中提取合理范围的数字（0.5~15.0）。
     """
-
-    m = re.search(
-        r"\d+(?:\.\d+)?",
-        norm(x),
-    )
-
-    if m:
-
-        return float(
-            m.group()
-        )
-
+    s = norm(x)
+    nums = re.findall(r"\d+(?:\.\d+)?", s)
+    for n in nums:
+        val = float(n)
+        if 0.5 <= val <= 15.0:
+            return val
+    if nums:
+        return float(nums[0])
     return None
 
 
@@ -305,49 +279,67 @@ def semester_value(x):
     """
     识别第1、2学期。
     """
-
     s = norm(x)
+    if not s:
+        return None
 
-    if (
-        "一" in s
-        or re.search(
-            r"(^|[^0-9])1([^0-9]|$)",
-            s,
-        )
-    ):
-
+    if any(kw in s for kw in ["第一学期", "第1学期", "秋季"]):
         return 1
+    if any(kw in s for kw in ["第二学期", "第2学期", "春季"]):
+        return 2
 
-    if (
-        "二" in s
-        or re.search(
-            r"(^|[^0-9])2([^0-9]|$)",
-            s,
-        )
-    ):
-
+    if "一" in s or re.search(r"(?:^|[^0-9])1(?:[^0-9]|$)", s):
+        return 1
+    if "二" in s or re.search(r"(?:^|[^0-9])2(?:[^0-9]|$)", s):
         return 2
 
     return None
 
 
-def find_col(headers, names):
+def find_header_groups(row):
     """
-    根据表头名称寻找列位置。
+    在一行表头中查找所有（课程名称, 学分, 学期, 成绩）列的组合。
+    增强支持单栏、双栏（左右两半）及多栏并排表格。
     """
+    norm_row = [norm(cell) for cell in row]
 
-    for i, h in enumerate(headers):
+    course_cols = []
+    for i, cell in enumerate(norm_row):
+        # 排除包含大标题、成绩单等非表头单元格
+        if "成绩单" in cell or len(cell) > 12:
+            continue
+        if cell in ["课程名称", "课程名", "课程", "课程代码/名称", "课程名称(中文)"]:
+            course_cols.append(i)
+        elif "课程" in cell and not any(ex in cell for ex in ["代码", "类别", "性质", "类型", "属性"]):
+            course_cols.append(i)
 
-        h = norm(h)
+    if not course_cols:
+        return []
 
-        if any(
-            name in h
-            for name in names
-        ):
+    groups = []
+    num_cols = len(norm_row)
 
-            return i
+    for idx, ci in enumerate(course_cols):
+        start_idx = max(0, ci - 2)
+        end_idx = course_cols[idx + 1] if idx + 1 < len(course_cols) else num_cols
 
-    return None
+        cr = None
+        se = None
+        gr = None
+
+        for col_i in range(start_idx, end_idx):
+            cell_txt = norm_row[col_i]
+            if cr is None and any(kw in cell_txt for kw in ["学分"]):
+                cr = col_i
+            if se is None and any(kw in cell_txt for kw in ["选修学期", "开课学期", "学期", "修读学期", "选修"]):
+                se = col_i
+            if gr is None and any(kw in cell_txt for kw in ["成绩", "总评", "考核成绩", "综合成绩"]):
+                gr = col_i
+
+        if ci is not None and cr is not None and gr is not None:
+            groups.append((ci, cr, se, gr))
+
+    return groups
 
 
 # ============================================================
@@ -355,211 +347,63 @@ def find_col(headers, names):
 # ============================================================
 
 def parse_rows(rows):
-
-    # --------------------------------------------------------
-    # 第一步：清理空行
-    # --------------------------------------------------------
-
     cleaned = []
-
     for row in rows:
-
-        vals = [
-            norm(v)
-            for v in row
-        ]
-
+        vals = [norm(v) for v in row]
         if any(vals):
-
-            cleaned.append(
-                vals
-            )
-
-    # --------------------------------------------------------
-    # 第二步：寻找成绩单表头
-    # --------------------------------------------------------
-
-    header = None
-
-    for hi, row in enumerate(
-        cleaned[:20]
-    ):
-
-        ci = find_col(
-            row,
-            [
-                "课程名称",
-                "课程名",
-                "课程",
-            ],
-        )
-
-        cr = find_col(
-            row,
-            [
-                "学分",
-            ],
-        )
-
-        se = find_col(
-            row,
-            [
-                "选修学期",
-                "开课学期",
-                "学期",
-            ],
-        )
-
-        gr = find_col(
-            row,
-            [
-                "成绩",
-            ],
-        )
-
-        if (
-            ci is not None
-            and cr is not None
-            and gr is not None
-        ):
-
-            header = (
-                hi,
-                ci,
-                cr,
-                se,
-                gr,
-            )
-
-            break
-
-    if header is None:
-
-        raise ValueError(
-            "未能识别成绩单表头。"
-            "请上传研究生管理系统导出的成绩单。"
-        )
-
-    hi, ci, cr, se, gr = header
+            cleaned.append(vals)
 
     records = []
+    current_groups = []
 
-    # --------------------------------------------------------
-    # 第三步：逐行解析课程
-    # --------------------------------------------------------
-
-    for row in cleaned[
-        hi + 1:
-    ]:
-
-        need = max(
-            ci,
-            cr,
-            gr,
-            se if se is not None else 0,
-        ) + 1
-
-        # 如果某一行列数不足，用空字符串补齐
-        row = row + [
-            ""
-        ] * max(
-            0,
-            need - len(row),
-        )
-
-        course = row[ci]
-
-        credit = credit_value(
-            row[cr]
-        )
-
-        raw = row[gr]
-
-        if se is not None:
-
-            semester = semester_value(
-                row[se]
-            )
-
-        else:
-
-            semester = None
-
-        score = grade_value(
-            raw
-        )
-
-        # ----------------------------------------------------
-        # 无效记录跳过
-        # ----------------------------------------------------
-
-        if (
-            not course
-            or credit is None
-            or score is None
-        ):
-
+    for row in cleaned:
+        # 尝试匹配当前行是否为表头行
+        groups = find_header_groups(row)
+        if groups:
+            current_groups = groups
             continue
 
-        # ----------------------------------------------------
-        # 保存有效课程
-        # ----------------------------------------------------
+        if not current_groups:
+            continue
 
-        records.append(
-            {
+        # 按找到的表头分组逐个提取课程
+        for (ci, cr, se, gr) in current_groups:
+            need = max(ci, cr, gr, se if se is not None else 0) + 1
+            if len(row) < need:
+                continue
+
+            course = row[ci]
+            raw = row[gr]
+            raw_credit = row[cr]
+            raw_se = row[se] if se is not None else ""
+
+            # 跳过空课程名或重复表头文本
+            if not course or any(kw in course for kw in ["课程名称", "课程名", "课程代码", "研究生成绩单"]):
+                continue
+
+            credit = credit_value(raw_credit)
+            score = grade_value(raw)
+            semester = semester_value(raw_se) if se is not None else None
+
+            # 无效记录跳过
+            if credit is None or score is None:
+                continue
+
+            records.append({
                 "课程名称": course,
                 "学分": credit,
                 "原始成绩": raw,
                 "换算成绩": score,
                 "学期": semester,
-            }
-        )
+            })
 
-    # --------------------------------------------------------
-    # 第四步：特殊处理第一外国语（硕士英语II）
-    # --------------------------------------------------------
-    #
-    # 实际成绩单中：
-    #
-    # 第一外国语（硕士英语II）
-    # 记录1 -> 0学分
-    # 记录2 -> 3学分
-    #
-    # 实际应该：
-    #
-    # 记录1 -> 1.5学分
-    # 记录2 -> 1.5学分
-    #
-    # 因此两条记录统一修正为1.5学分。
-    # --------------------------------------------------------
-
+    # 特殊处理第一外国语（硕士英语II）
     for record in records:
-
-        course_name = norm(
-            str(
-                record["课程名称"]
-            )
-        )
-
-        if (
-            "第一外国语" in course_name
-            and (
-                "硕士英语II" in course_name
-                or "硕士英语Ⅱ" in course_name
-            )
+        course_name = norm(str(record["课程名称"]))
+        if "第一外国语" in course_name and (
+            "硕士英语II" in course_name or "硕士英语Ⅱ" in course_name
         ):
-
             record["学分"] = 1.5
-
-    # --------------------------------------------------------
-    # 第五步：检查是否成功识别课程
-    # --------------------------------------------------------
-
-    if not records:
-
-        raise ValueError(
-            "未识别到有效课程成绩。"
-        )
 
     return records
 
@@ -569,53 +413,115 @@ def parse_rows(rows):
 # ============================================================
 
 def parse_docx(data):
-
-    doc = Document(
-        io.BytesIO(data)
-    )
-
+    doc = Document(io.BytesIO(data))
     rows = []
-
     for table in doc.tables:
-
         for row in table.rows:
+            rows.append([cell.text for cell in row.cells])
 
-            rows.append(
-                [
-                    cell.text
-                    for cell in row.cells
-                ]
-            )
-
-    return parse_rows(rows)
+    records = parse_rows(rows)
+    if not records:
+        raise ValueError("未能识别到有效课程成绩，请检查 Word 成绩单格式。")
+    return records
 
 
 # ============================================================
-# PDF 解析
+# PDF 解析与文本兜底解析
 # ============================================================
+
+def parse_pdf_text_fallback(data):
+    """
+    当表格提取失败时的文本行识别兜底方案。
+    """
+    records = []
+    with pdfplumber.open(io.BytesIO(data)) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text() or ""
+            for line in text.split("\n"):
+                line_str = line.strip()
+                if not line_str:
+                    continue
+                tokens = line_str.split()
+                if len(tokens) < 3:
+                    continue
+
+                credit = None
+                score = None
+                semester = None
+                course_parts = []
+
+                for token in tokens:
+                    c_val = credit_value(token)
+                    g_val = grade_value(token)
+                    s_val = semester_value(token)
+
+                    if c_val is not None and credit is None and 0.5 <= c_val <= 15:
+                        credit = c_val
+                    elif g_val is not None and score is None:
+                        score = g_val
+                    elif s_val is not None and semester is None:
+                        semester = s_val
+                    else:
+                        course_parts.append(token)
+
+                course_name = norm("".join(course_parts))
+                if course_name and credit is not None and score is not None:
+                    if not any(kw in course_name for kw in ["课程名称", "学分", "成绩", "研究生院"]):
+                        records.append({
+                            "课程名称": course_name,
+                            "学分": credit,
+                            "原始成绩": str(score),
+                            "换算成绩": score,
+                            "学期": semester,
+                        })
+
+    # 特殊处理第一外国语（硕士英语II）
+    for record in records:
+        course_name = norm(str(record["课程名称"]))
+        if "第一外国语" in course_name and (
+            "硕士英语II" in course_name or "硕士英语Ⅱ" in course_name
+        ):
+            record["学分"] = 1.5
+
+    return records
+
 
 def parse_pdf(data):
-
     rows = []
-
-    with pdfplumber.open(
-        io.BytesIO(data)
-    ) as pdf:
-
+    with pdfplumber.open(io.BytesIO(data)) as pdf:
         for page in pdf.pages:
+            # 1. 优先使用线框提取表格
+            tables = page.extract_tables() or []
 
-            tables = (
-                page.extract_tables()
-                or []
-            )
+            # 2. 若未提取到，尝试使用文本对齐策略提取（处理隐形/无边框表格）
+            if not tables:
+                tables = page.extract_tables(
+                    table_settings={
+                        "vertical_strategy": "text",
+                        "horizontal_strategy": "text",
+                        "snap_tolerance": 3,
+                    }
+                ) or []
 
             for table in tables:
+                if table:
+                    rows.extend(table)
 
-                rows.extend(
-                    table
-                )
+    records = []
+    if rows:
+        try:
+            records = parse_rows(rows)
+        except Exception:
+            records = []
 
-    return parse_rows(rows)
+    # 3. 若表格提取未识别到记录，启用全文文本识别兜底
+    if not records:
+        records = parse_pdf_text_fallback(data)
+
+    if not records:
+        raise ValueError("未识别到有效课程成绩，请确认上传的是清晰的研究生成绩单 PDF。")
+
+    return records
 
 
 # ============================================================
@@ -623,17 +529,9 @@ def parse_pdf(data):
 # ============================================================
 
 def convert_doc(data):
-
     with tempfile.TemporaryDirectory() as td:
-
-        src = (
-            Path(td)
-            / "input.doc"
-        )
-
-        src.write_bytes(
-            data
-        )
+        src = Path(td) / "input.doc"
+        src.write_bytes(data)
 
         p = subprocess.run(
             [
@@ -649,19 +547,11 @@ def convert_doc(data):
             text=True,
         )
 
-        out = (
-            Path(td)
-            / "input.docx"
-        )
+        out = Path(td) / "input.docx"
 
-        if (
-            p.returncode != 0
-            or not out.exists()
-        ):
-
+        if p.returncode != 0 or not out.exists():
             raise RuntimeError(
-                "DOC 转换失败："
-                "部署环境未安装 LibreOffice。"
+                "DOC 转换失败：部署环境未安装 LibreOffice。"
             )
 
         return out.read_bytes()
@@ -806,9 +696,6 @@ if uploaded:
 
             # ------------------------------------------------
             # 绩点
-            #
-            # 公式：
-            # 绩点 = B / 10 - 5
             # ------------------------------------------------
 
             grade_point = (
@@ -818,7 +705,6 @@ if uploaded:
             # =================================================
             # 结果显示
             # =================================================
-
 
             st.write(
                 f"加权成绩 B：{B:.2f}；绩点：{grade_point:.3f}"
