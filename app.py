@@ -59,15 +59,11 @@ st.markdown(
     overflow: visible;
 }
 
-/* 学校名称 */
-
 .school {
     font-size: 15px;
     color: #666;
     margin-bottom: 3px;
 }
-
-/* 页面标题 */
 
 .title {
     font-size: 27px;
@@ -75,54 +71,11 @@ st.markdown(
     line-height: 1.25;
 }
 
-/* 副标题 */
-
 .subtitle {
     font-size: 15px;
     color: #666;
     margin-top: 4px;
 }
-
-
-/* ============================================================
-   成绩结果卡片
-   ============================================================ */
-
-.result-card {
-    padding: 24px;
-    border-radius: 18px;
-    background: linear-gradient(
-        135deg,
-        #f5fbff,
-        #f8fbff
-    );
-    border: 1px solid #d8eaf5;
-    text-align: center;
-    margin: 18px 0;
-}
-
-.result-label {
-    font-size: 15px;
-    color: #5f6b76;
-    margin-bottom: 8px;
-}
-
-.result-number {
-    font-size: 36px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-}
-
-.result-point {
-    font-size: 20px;
-    color: #5f6b76;
-    margin-top: 10px;
-}
-
-
-/* ============================================================
-   页脚
-   ============================================================ */
 
 .footer {
     font-size: 12px;
@@ -130,11 +83,6 @@ st.markdown(
     text-align: center;
     margin-top: 30px;
 }
-
-
-/* ============================================================
-   Metric
-   ============================================================ */
 
 div[data-testid="stMetric"] {
     background: #fafbfd;
@@ -154,10 +102,7 @@ div[data-testid="stMetric"] {
 # ============================================================
 
 if Path(LOGO).exists():
-    st.image(
-        LOGO,
-        width=78,
-    )
+    st.image(LOGO, width=78)
 
 
 st.markdown(
@@ -178,20 +123,14 @@ st.markdown(
 )
 
 
-st.markdown(
-    "<div style='height: 12px;'></div>",
-    unsafe_allow_html=True,
-)
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 
 # ============================================================
 # 计算规则说明
 # ============================================================
 
-with st.expander(
-    "📌 计算规则",
-    expanded=False,
-):
+with st.expander("📌 计算规则", expanded=False):
     st.markdown(
         """
 **成绩 B：**
@@ -217,11 +156,7 @@ with st.expander(
 with st.container(border=True):
     uploaded = st.file_uploader(
         "📄 上传成绩单",
-        type=[
-            "pdf",
-            "docx",
-            "doc",
-        ],
+        type=["pdf", "docx", "doc"],
         help="支持 PDF、DOCX；DOC 格式需要部署环境安装 LibreOffice。",
     )
 
@@ -231,47 +166,42 @@ with st.container(border=True):
 # ============================================================
 
 def norm(x):
-    """
-    清理字符串中的空白字符。
-    """
     return re.sub(r"\s+", "", str(x or "")).strip()
 
 
 def grade_value(x):
     """
-    将成绩转换为数值（支持百分制数字、等级制等）。
+    将成绩转换为数值（安全范围拦截，避免将学分当作成绩）。
     """
     s = norm(x)
     if not s:
         return None
 
-    # 1. 优先提取 0-100 之间的数字（如 85.5、90）
-    nums = re.findall(r"\d+(?:\.\d+)?", s)
-    for n in nums:
-        val = float(n)
-        if 0 <= val <= 100:
-            return val
-
-    # 2. 匹配等级成绩（优秀/良好/中/及格/不及格等）
+    # 1. 匹配等级成绩
     for k, v in GRADE_MAP.items():
         if k in s:
             return float(v)
+
+    # 2. 匹配百分制数字（成绩一般 >= 30 分，或 0 分为不及格；避免 1.0~12.0 的学分被误认）
+    nums = re.findall(r"\d+(?:\.\d+)?", s)
+    for n in nums:
+        val = float(n)
+        if val == 0 or 30.0 <= val <= 100.0:
+            return val
 
     return None
 
 
 def credit_value(x):
     """
-    从学分字段中提取合理范围的数字（0.5~15.0）。
+    从学分字段中提取数字（常见范围 0.5~12.0）。
     """
     s = norm(x)
     nums = re.findall(r"\d+(?:\.\d+)?", s)
     for n in nums:
         val = float(n)
-        if 0.5 <= val <= 15.0:
+        if 0.5 <= val <= 12.0:
             return val
-    if nums:
-        return float(nums[0])
     return None
 
 
@@ -298,14 +228,11 @@ def semester_value(x):
 
 def find_header_groups(row):
     """
-    在一行表头中查找所有（课程名称, 学分, 学期, 成绩）列的组合。
-    增强支持单栏、双栏（左右两半）及多栏并排表格。
+    在一行中寻找表头标志，判断单栏/多栏。
     """
     norm_row = [norm(cell) for cell in row]
-
     course_cols = []
     for i, cell in enumerate(norm_row):
-        # 排除包含大标题、成绩单等非表头单元格
         if "成绩单" in cell or len(cell) > 12:
             continue
         if cell in ["课程名称", "课程名", "课程", "课程代码/名称", "课程名称(中文)"]:
@@ -313,33 +240,78 @@ def find_header_groups(row):
         elif "课程" in cell and not any(ex in cell for ex in ["代码", "类别", "性质", "类型", "属性"]):
             course_cols.append(i)
 
-    if not course_cols:
-        return []
+    return course_cols
 
-    groups = []
-    num_cols = len(norm_row)
 
-    for idx, ci in enumerate(course_cols):
-        start_idx = max(0, ci - 2)
-        end_idx = course_cols[idx + 1] if idx + 1 < len(course_cols) else num_cols
+def parse_sub_row(sub_row):
+    """
+    智能解析一行/半行单元格中的课程名、学分、成绩、学期。
+    彻底防御由于列错位导致的读取失败。
+    """
+    cells = [norm(c) for c in sub_row if norm(c)]
+    if not cells:
+        return None
 
-        cr = None
-        se = None
-        gr = None
+    # 1. 寻找成绩
+    score = None
+    score_idx = -1
+    for idx, cell in enumerate(cells):
+        if any(kw in cell for kw in ["课程", "代码", "名称", "学分", "学期", "类型", "属性"]):
+            continue
+        gv = grade_value(cell)
+        if gv is not None:
+            score = gv
+            score_idx = idx
+            break
 
-        for col_i in range(start_idx, end_idx):
-            cell_txt = norm_row[col_i]
-            if cr is None and any(kw in cell_txt for kw in ["学分"]):
-                cr = col_i
-            if se is None and any(kw in cell_txt for kw in ["选修学期", "开课学期", "学期", "修读学期", "选修"]):
-                se = col_i
-            if gr is None and any(kw in cell_txt for kw in ["成绩", "总评", "考核成绩", "综合成绩"]):
-                gr = col_i
+    # 2. 寻找学分
+    credit = None
+    credit_idx = -1
+    for idx, cell in enumerate(cells):
+        if idx == score_idx:
+            continue
+        if any(kw in cell for kw in ["课程", "代码", "名称", "成绩", "学期"]):
+            continue
+        cv = credit_value(cell)
+        if cv is not None:
+            credit = cv
+            credit_idx = idx
+            break
 
-        if ci is not None and cr is not None and gr is not None:
-            groups.append((ci, cr, se, gr))
+    # 3. 寻找学期
+    semester = None
+    for idx, cell in enumerate(cells):
+        if idx in (score_idx, credit_idx):
+            continue
+        sv = semester_value(cell)
+        if sv is not None:
+            semester = sv
+            break
 
-    return groups
+    # 4. 抽取课程名称
+    possible_courses = []
+    for idx, cell in enumerate(cells):
+        if idx in (score_idx, credit_idx):
+            continue
+        if cell in ["必修", "选修", "学位课", "非学位课", "限选", "任选", "公选"]:
+            continue
+        if any(kw in cell for kw in ["课程名称", "课程代码", "研究生", "成绩单", "学分", "成绩", "学期", "考核"]):
+            continue
+        if re.match(r"^\d+$", cell):
+            continue
+        possible_courses.append(cell)
+
+    if possible_courses and credit is not None and score is not None:
+        course_name = max(possible_courses, key=len)
+        return {
+            "课程名称": course_name,
+            "学分": credit,
+            "原始成绩": str(cells[score_idx]),
+            "换算成绩": score,
+            "学期": semester,
+        }
+
+    return None
 
 
 # ============================================================
@@ -354,54 +326,43 @@ def parse_rows(rows):
             cleaned.append(vals)
 
     records = []
-    current_groups = []
+    has_header = False
+    num_groups = 1
 
     for row in cleaned:
-        # 尝试匹配当前行是否为表头行
-        groups = find_header_groups(row)
-        if groups:
-            current_groups = groups
+        header_cols = find_header_groups(row)
+        if header_cols:
+            has_header = True
+            num_groups = max(1, len(header_cols))
             continue
 
-        if not current_groups:
+        if not has_header:
+            # 未发现表头前尝试直接尝试解析数据行
+            res = parse_sub_row(row)
+            if res:
+                records.append(res)
             continue
 
-        # 按找到的表头分组逐个提取课程
-        for (ci, cr, se, gr) in current_groups:
-            need = max(ci, cr, gr, se if se is not None else 0) + 1
-            if len(row) < need:
-                continue
-
-            course = row[ci]
-            raw = row[gr]
-            raw_credit = row[cr]
-            raw_se = row[se] if se is not None else ""
-
-            # 跳过空课程名或重复表头文本
-            if not course or any(kw in course for kw in ["课程名称", "课程名", "课程代码", "研究生成绩单"]):
-                continue
-
-            credit = credit_value(raw_credit)
-            score = grade_value(raw)
-            semester = semester_value(raw_se) if se is not None else None
-
-            # 无效记录跳过
-            if credit is None or score is None:
-                continue
-
-            records.append({
-                "课程名称": course,
-                "学分": credit,
-                "原始成绩": raw,
-                "换算成绩": score,
-                "学期": semester,
-            })
+        num_cols = len(row)
+        if num_groups > 1 and num_cols >= 6:
+            # 双栏/多栏表格分段智能抽取
+            mid = num_cols // num_groups
+            for g_idx in range(num_groups):
+                sub = row[g_idx * mid : (g_idx + 1) * mid]
+                res = parse_sub_row(sub)
+                if res:
+                    records.append(res)
+        else:
+            # 单栏表格抽取
+            res = parse_sub_row(row)
+            if res:
+                records.append(res)
 
     # 特殊处理第一外国语（硕士英语II）
     for record in records:
         course_name = norm(str(record["课程名称"]))
         if "第一外国语" in course_name and (
-            "硕士英语II" in course_name or "硕士英语Ⅱ" in course_name
+            "硕士英语II" in course_name or "硕士英语Ⅱ" in course_name or "英语II" in course_name
         ):
             record["学分"] = 1.5
 
@@ -426,60 +387,25 @@ def parse_docx(data):
 
 
 # ============================================================
-# PDF 解析与文本兜底解析
+# PDF 解析与文本兜底
 # ============================================================
 
 def parse_pdf_text_fallback(data):
-    """
-    当表格提取失败时的文本行识别兜底方案。
-    """
     records = []
     with pdfplumber.open(io.BytesIO(data)) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
             for line in text.split("\n"):
-                line_str = line.strip()
-                if not line_str:
-                    continue
-                tokens = line_str.split()
-                if len(tokens) < 3:
-                    continue
+                tokens = line.strip().split()
+                if len(tokens) >= 3:
+                    res = parse_sub_row(tokens)
+                    if res:
+                        records.append(res)
 
-                credit = None
-                score = None
-                semester = None
-                course_parts = []
-
-                for token in tokens:
-                    c_val = credit_value(token)
-                    g_val = grade_value(token)
-                    s_val = semester_value(token)
-
-                    if c_val is not None and credit is None and 0.5 <= c_val <= 15:
-                        credit = c_val
-                    elif g_val is not None and score is None:
-                        score = g_val
-                    elif s_val is not None and semester is None:
-                        semester = s_val
-                    else:
-                        course_parts.append(token)
-
-                course_name = norm("".join(course_parts))
-                if course_name and credit is not None and score is not None:
-                    if not any(kw in course_name for kw in ["课程名称", "学分", "成绩", "研究生院"]):
-                        records.append({
-                            "课程名称": course_name,
-                            "学分": credit,
-                            "原始成绩": str(score),
-                            "换算成绩": score,
-                            "学期": semester,
-                        })
-
-    # 特殊处理第一外国语（硕士英语II）
     for record in records:
         course_name = norm(str(record["课程名称"]))
         if "第一外国语" in course_name and (
-            "硕士英语II" in course_name or "硕士英语Ⅱ" in course_name
+            "硕士英语II" in course_name or "硕士英语Ⅱ" in course_name or "英语II" in course_name
         ):
             record["学分"] = 1.5
 
@@ -490,10 +416,7 @@ def parse_pdf(data):
     rows = []
     with pdfplumber.open(io.BytesIO(data)) as pdf:
         for page in pdf.pages:
-            # 1. 优先使用线框提取表格
             tables = page.extract_tables() or []
-
-            # 2. 若未提取到，尝试使用文本对齐策略提取（处理隐形/无边框表格）
             if not tables:
                 tables = page.extract_tables(
                     table_settings={
@@ -514,7 +437,6 @@ def parse_pdf(data):
         except Exception:
             records = []
 
-    # 3. 若表格提取未识别到记录，启用全文文本识别兜底
     if not records:
         records = parse_pdf_text_fallback(data)
 
@@ -550,271 +472,85 @@ def convert_doc(data):
         out = Path(td) / "input.docx"
 
         if p.returncode != 0 or not out.exists():
-            raise RuntimeError(
-                "DOC 转换失败：部署环境未安装 LibreOffice。"
-            )
+            raise RuntimeError("DOC 转换失败：部署环境未安装 LibreOffice。")
 
         return out.read_bytes()
 
 
 # ============================================================
-# 上传文件后的主要计算流程
+# 上传文件后的计算流程
 # ============================================================
 
 if uploaded:
 
     try:
-
         data = uploaded.getvalue()
+        suffix = Path(uploaded.name).suffix.lower()
 
-        suffix = (
-            Path(uploaded.name)
-            .suffix
-            .lower()
-        )
-
-        # ----------------------------------------------------
-        # 文件识别
-        # ----------------------------------------------------
-
-        with st.spinner(
-            "正在识别成绩单并计算……"
-        ):
-
+        with st.spinner("正在识别成绩单并计算……"):
             if suffix == ".pdf":
-
-                records = parse_pdf(
-                    data
-                )
-
+                records = parse_pdf(data)
             elif suffix == ".docx":
-
-                records = parse_docx(
-                    data
-                )
-
+                records = parse_docx(data)
             elif suffix == ".doc":
-
-                records = parse_docx(
-                    convert_doc(data)
-                )
-
+                records = parse_docx(convert_doc(data))
             else:
+                raise ValueError("不支持的文件类型。")
 
-                raise ValueError(
-                    "不支持的文件类型。"
-                )
+            all_df = pd.DataFrame(records)
 
-            # ------------------------------------------------
-            # 转为 DataFrame
-            # ------------------------------------------------
-
-            all_df = pd.DataFrame(
-                records
-            )
-
-            # ------------------------------------------------
-            # 第1、2学期 = 第一学年
-            # ------------------------------------------------
-
-            if all_df[
-                "学期"
-            ].notna().any():
-
-                calc_df = all_df[
-                    all_df["学期"].isin(
-                        [
-                            1,
-                            2,
-                        ]
-                    )
-                ].copy()
-
+            # 按第 1、2 学期筛选
+            if all_df["学期"].notna().any():
+                calc_df = all_df[all_df["学期"].isin([1, 2])].copy()
                 if len(calc_df) == 0:
-
                     calc_df = all_df.copy()
-
-                    st.warning(
-                        "未能可靠识别第一学年，"
-                        "当前按全部识别课程计算，请核对。"
-                    )
-
+                    st.warning("未能可靠识别第一学年学期标识，当前按全部识别课程计算，请核对。")
                 else:
-
-                    st.success(
-                        "已按第 1、2 学期识别第一学年课程。"
-                    )
-
+                    st.success("已按第 1、2 学期识别第一学年课程。")
             else:
-
                 calc_df = all_df.copy()
+                st.warning("成绩单缺少可识别的学期信息，当前按全部课程计算，请核对。")
 
-                st.warning(
-                    "成绩单缺少可识别的学期信息，"
-                    "当前按全部课程计算，请核对。"
-                )
+            calc_df["成绩×学分"] = calc_df["换算成绩"] * calc_df["学分"]
+            total_credit = float(calc_df["学分"].sum())
+            weighted = float(calc_df["成绩×学分"].sum())
+            B = weighted / total_credit if total_credit else 0
+            grade_point = B / 10 - 5
 
-            # ------------------------------------------------
-            # 计算：成绩 × 学分
-            # ------------------------------------------------
-
-            calc_df["成绩×学分"] = (
-                calc_df["换算成绩"]
-                * calc_df["学分"]
+            st.markdown(
+                f"### 加权成绩 B：`{B:.2f}` &nbsp;&nbsp; 绩点：`{grade_point:.3f}`"
             )
-
-            # ------------------------------------------------
-            # 总学分
-            # ------------------------------------------------
-
-            total_credit = float(
-                calc_df["学分"].sum()
-            )
-
-            # ------------------------------------------------
-            # 加权总分
-            # ------------------------------------------------
-
-            weighted = float(
-                calc_df["成绩×学分"].sum()
-            )
-
-            # ------------------------------------------------
-            # 成绩 B
-            # ------------------------------------------------
-
-            if total_credit:
-
-                B = (
-                    weighted
-                    / total_credit
-                )
-
-            else:
-
-                B = 0
-
-            # ------------------------------------------------
-            # 绩点
-            # ------------------------------------------------
-
-            grade_point = (
-                B / 10 - 5
-            )
-
-            # =================================================
-            # 结果显示
-            # =================================================
-
-            st.write(
-                f"加权成绩 B：{B:.2f}；绩点：{grade_point:.3f}"
-            )
-
-            # =================================================
-            # 三项统计指标
-            # =================================================
 
             a, b, c = st.columns(3)
+            a.metric("课程数", len(calc_df))
+            b.metric("总学分", f"{total_credit:.2f}")
+            c.metric("加权总分", f"{weighted:.2f}")
 
-            a.metric(
-                "课程数",
-                len(calc_df),
-            )
-
-            b.metric(
-                "总学分",
-                f"{total_credit:.2f}",
-            )
-
-            c.metric(
-                "加权总分",
-                f"{weighted:.2f}",
-            )
-
-            # =================================================
-            # 识别明细
-            # =================================================
-
-            st.subheader(
-                "📋 识别明细"
-            )
+            st.subheader("📋 识别明细")
 
             show = calc_df[
-                [
-                    "课程名称",
-                    "学分",
-                    "原始成绩",
-                    "换算成绩",
-                    "成绩×学分",
-                ]
+                ["课程名称", "学分", "原始成绩", "换算成绩", "成绩×学分"]
             ].copy()
 
-            # ------------------------------------------------
-            # 保留合理的小数位
-            # ------------------------------------------------
+            show["学分"] = show["学分"].map(lambda x: f"{x:.2f}")
+            show["换算成绩"] = show["换算成绩"].map(lambda x: f"{x:.2f}")
+            show["成绩×学分"] = show["成绩×学分"].map(lambda x: f"{x:.2f}")
 
-            show["学分"] = show[
-                "学分"
-            ].map(
-                lambda x: f"{x:.2f}"
-            )
+            st.dataframe(show, use_container_width=True, hide_index=True)
 
-            show["换算成绩"] = show[
-                "换算成绩"
-            ].map(
-                lambda x: f"{x:.2f}"
-            )
-
-            show["成绩×学分"] = show[
-                "成绩×学分"
-            ].map(
-                lambda x: f"{x:.2f}"
-            )
-
-            st.dataframe(
-                show,
-                use_container_width=True,
-                hide_index=True,
-            )
-
-            # =================================================
-            # 下载计算明细
-            # =================================================
-
-            csv = (
-                show
-                .to_csv(
-                    index=False
-                )
-                .encode(
-                    "utf-8-sig"
-                )
-            )
-
+            csv = show.to_csv(index=False).encode("utf-8-sig")
             st.download_button(
-                "⬇️ 下载计算明细",
+                "⬇️ 下载计算明细 CSV",
                 data=csv,
-                file_name=(
-                    "研究生奖学金成绩B计算明细.csv"
-                ),
+                file_name="研究生奖学金成绩B计算明细.csv",
                 mime="text/csv",
                 use_container_width=True,
             )
 
-            # =================================================
-            # 提醒
-            # =================================================
-
-            st.info(
-                "请在提交奖学金材料前核对课程、"
-                "学分及成绩识别结果。"
-            )
+            st.info("请在提交奖学金材料前对照上方列表核对各项课程学分与成绩。")
 
     except Exception as e:
-
-        st.error(
-            f"处理成绩单时发生错误：{e}"
-        )
+        st.error(f"处理成绩单时发生错误：{e}")
 
 
 # ============================================================
@@ -824,8 +560,7 @@ if uploaded:
 st.markdown(
     """
     <div class="footer">
-        江苏科技大学环境与化学工程学院 ·
-        研究生奖学金成绩 B 计算器
+        江苏科技大学环境与化学工程学院 · 研究生奖学金成绩 B 计算器
     </div>
     """,
     unsafe_allow_html=True,
