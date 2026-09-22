@@ -50,80 +50,101 @@ LOGO = "static/校徽.png"
 
 st.markdown(
     """
-    <style>
+<style>
 
-    .block-container {
-        max-width: 900px;
-        padding-top: 1.2rem;
-        padding-bottom: 3rem;
-        overflow: visible;
-    }
+.block-container {
+    max-width: 900px;
+    padding-top: 1.2rem;
+    padding-bottom: 3rem;
+    overflow: visible;
+}
 
-    .school {
-        font-size: 15px;
-        color: #666;
-        margin-bottom: 3px;
-    }
+/* 学校名称 */
 
-    .title {
-        font-size: 27px;
-        font-weight: 800;
-        line-height: 1.25;
-    }
+.school {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 3px;
+}
 
-    .subtitle {
-        font-size: 15px;
-        color: #666;
-        margin-top: 4px;
-    }
+/* 页面标题 */
 
-    .result-card {
-        padding: 24px;
-        border-radius: 18px;
-        background: linear-gradient(
-            135deg,
-            #f5fbff,
-            #f8fbff
-        );
-        border: 1px solid #d8eaf5;
-        text-align: center;
-        margin: 18px 0;
-    }
+.title {
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.25;
+}
 
-    .result-label {
-        font-size: 15px;
-        color: #5f6b76;
-        margin-bottom: 8px;
-    }
+/* 副标题 */
 
-    .result-number {
-        font-size: 36px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-    }
+.subtitle {
+    font-size: 15px;
+    color: #666;
+    margin-top: 4px;
+}
 
-    .result-point {
-        font-size: 20px;
-        color: #5f6b76;
-        margin-top: 10px;
-    }
 
-    .footer {
-        font-size: 12px;
-        color: #8a8f95;
-        text-align: center;
-        margin-top: 30px;
-    }
+/* ============================================================
+   成绩结果卡片
+   ============================================================ */
 
-    div[data-testid="stMetric"] {
-        background: #fafbfd;
-        padding: 12px;
-        border-radius: 12px;
-        border: 1px solid #edf0f3;
-    }
+.result-card {
+    padding: 24px;
+    border-radius: 18px;
+    background: linear-gradient(
+        135deg,
+        #f5fbff,
+        #f8fbff
+    );
+    border: 1px solid #d8eaf5;
+    text-align: center;
+    margin: 18px 0;
+}
 
-    </style>
-    """,
+.result-label {
+    font-size: 15px;
+    color: #5f6b76;
+    margin-bottom: 8px;
+}
+
+.result-number {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.result-point {
+    font-size: 20px;
+    color: #5f6b76;
+    margin-top: 10px;
+}
+
+
+/* ============================================================
+   页脚
+   ============================================================ */
+
+.footer {
+    font-size: 12px;
+    color: #8a8f95;
+    text-align: center;
+    margin-top: 30px;
+}
+
+
+/* ============================================================
+   Metric
+   ============================================================ */
+
+div[data-testid="stMetric"] {
+    background: #fafbfd;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #edf0f3;
+}
+
+</style>
+""",
     unsafe_allow_html=True,
 )
 
@@ -133,10 +154,12 @@ st.markdown(
 # ============================================================
 
 if Path(LOGO).exists():
+
     st.image(
         LOGO,
         width=78,
     )
+
 
 st.markdown(
     """
@@ -155,6 +178,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 st.markdown(
     "<div style='height: 12px;'></div>",
     unsafe_allow_html=True,
@@ -169,6 +193,7 @@ with st.expander(
     "📌 计算规则",
     expanded=False,
 ):
+
     st.markdown(
         """
 **成绩 B：**
@@ -212,13 +237,11 @@ def norm(x):
     """
     清理字符串中的空白字符。
     """
-    if x is None:
-        return ""
 
     return re.sub(
         r"\s+",
         "",
-        str(x),
+        str(x or ""),
     ).strip()
 
 
@@ -227,6 +250,7 @@ def grade_value(x):
     将成绩转换为数值。
 
     例如：
+
     优秀 -> 95
     良好 -> 85
     90 -> 90
@@ -239,7 +263,10 @@ def grade_value(x):
         return None
 
     if s in GRADE_MAP:
-        return float(GRADE_MAP[s])
+
+        return float(
+            GRADE_MAP[s]
+        )
 
     m = re.search(
         r"-?\d+(?:\.\d+)?",
@@ -247,7 +274,10 @@ def grade_value(x):
     )
 
     if m:
-        return float(m.group())
+
+        return float(
+            m.group()
+        )
 
     return None
 
@@ -257,18 +287,16 @@ def credit_value(x):
     从学分字段中提取数字。
     """
 
-    s = norm(x)
-
-    if not s:
-        return None
-
     m = re.search(
         r"\d+(?:\.\d+)?",
-        s,
+        norm(x),
     )
 
     if m:
-        return float(m.group())
+
+        return float(
+            m.group()
+        )
 
     return None
 
@@ -280,9 +308,6 @@ def semester_value(x):
 
     s = norm(x)
 
-    if not s:
-        return None
-
     if (
         "一" in s
         or re.search(
@@ -290,6 +315,7 @@ def semester_value(x):
             s,
         )
     ):
+
         return 1
 
     if (
@@ -299,6 +325,7 @@ def semester_value(x):
             s,
         )
     ):
+
         return 2
 
     return None
@@ -317,106 +344,81 @@ def find_col(headers, names):
             name in h
             for name in names
         ):
+
             return i
 
     return None
 
 
-def is_valid_course_name(name):
+def _col_role(values):
     """
-    判断是否可能是课程名称。
-    """
-
-    name = norm(name)
-
-    if not name:
-        return False
-
-    invalid_words = [
-        "类别",
-        "课程名称",
-        "课程名",
-        "学时",
-        "学分",
-        "选修学期",
-        "成绩",
-        "备注",
-        "培养环节",
-        "总学分",
-        "平均分",
-        "打印时间",
-        "成绩管理部门",
-    ]
-
-    if name in invalid_words:
-        return False
-
-    return len(name) >= 2
-
-
-# ============================================================
-# 第一外国语特殊处理
-# ============================================================
-
-def fix_special_courses(records):
-    """
-    特殊课程学分修正。
-
-    江苏科技大学该类成绩单中：
-    第一外国语(硕士英语II)
-
-    可能出现：
-        第一条：0学分
-        第二条：3学分
-
-    实际计算按照：
-        第一条：1.5学分
-        第二条：1.5学分
+    根据一列数据值判断该列是“学分 / 学期 / 成绩”中的哪一种。
     """
 
-    english_records = []
+    term = 0
+    credit = 0
+    score = 0
+    n = 0
 
-    for record in records:
+    for v in values:
 
-        course_name = norm(
-            record.get("课程名称", "")
+        s = norm(v)
+
+        if not s:
+            continue
+
+        n += 1
+
+        # 学期：1~6 的单个数字
+        if re.fullmatch(r"[1-6]", s):
+            term += 1
+            continue
+
+        # 等级成绩：优/良/中/及格/不及格
+        if s in GRADE_MAP:
+            score += 1
+            continue
+
+        m = re.fullmatch(
+            r"\d+(?:\.\d+)?",
+            s,
         )
 
-        if (
-            "第一外国语" in course_name
-            and (
-                "硕士英语II" in course_name
-                or "硕士英语Ⅱ" in course_name
-            )
-        ):
-            english_records.append(record)
+        if m:
 
-    if len(english_records) >= 2:
+            if float(m.group()) <= 20:
+                credit += 1
+            else:
+                score += 1
 
-        for record in english_records:
-            record["学分"] = 1.5
+    if n == 0:
+        return None
 
-    return records
+    if term and term >= credit and term >= score:
+        return "term"
+
+    if credit and credit >= score:
+        return "credit"
+
+    if score:
+        return "score"
+
+    return None
 
 
 # ============================================================
-# 表格解析
+# 成绩单表格解析
 # ============================================================
 
 def parse_rows(rows):
-    """
-    通用表格解析。
 
-    DOCX 主要使用此方法。
-    PDF 也作为第一层解析方式使用。
-    """
+    # --------------------------------------------------------
+    # 第一步：清理空行
+    # --------------------------------------------------------
 
     cleaned = []
 
     for row in rows:
-
-        if row is None:
-            continue
 
         vals = [
             norm(v)
@@ -424,21 +426,19 @@ def parse_rows(rows):
         ]
 
         if any(vals):
-            cleaned.append(vals)
 
-    if not cleaned:
-        raise ValueError(
-            "未读取到成绩单表格内容。"
-        )
+            cleaned.append(
+                vals
+            )
 
     # --------------------------------------------------------
-    # 找表头
+    # 第二步：寻找成绩单表头
     # --------------------------------------------------------
 
     header = None
 
     for hi, row in enumerate(
-        cleaned[:30]
+        cleaned[:20]
     ):
 
         ci = find_col(
@@ -478,6 +478,7 @@ def parse_rows(rows):
             and cr is not None
             and gr is not None
         ):
+
             header = (
                 hi,
                 ci,
@@ -485,9 +486,11 @@ def parse_rows(rows):
                 se,
                 gr,
             )
+
             break
 
     if header is None:
+
         raise ValueError(
             "未能识别成绩单表头。"
             "请上传研究生管理系统导出的成绩单。"
@@ -495,10 +498,77 @@ def parse_rows(rows):
 
     hi, ci, cr, se, gr = header
 
+    # --------------------------------------------------------
+    # 第二步补充：处理 PDF 合并表头
+    # --------------------------------------------------------
+    #
+    # PDF 成绩单中“学分 / 选修学期 / 成绩”常被合并进同一个
+    # 表头单元格，find_col 会把三者定位到同一列，导致把学分
+    # 误当成成绩读取。这里按数据列内容重新定位真实列。
+    # --------------------------------------------------------
+
+    hcell = (
+        cleaned[hi][cr]
+        if cr < len(cleaned[hi])
+        else ""
+    )
+
+    if (
+        "学分" in hcell
+        and (
+            "成绩" in hcell
+            or "学期" in hcell
+        )
+    ):
+
+        # 合并单元格的右边界：右侧第一个非空表头
+        end = len(cleaned[hi])
+
+        for j in range(
+            cr + 1,
+            len(cleaned[hi]),
+        ):
+
+            if cleaned[hi][j]:
+                end = j
+                break
+
+        credit_i = None
+        term_i = None
+        score_i = None
+
+        for j in range(cr, end):
+
+            vals = [
+                row[j]
+                for row in cleaned[hi + 1:]
+                if j < len(row) and row[j]
+            ]
+
+            role = _col_role(vals)
+
+            if role == "credit" and credit_i is None:
+                credit_i = j
+
+            elif role == "term" and term_i is None:
+                term_i = j
+
+            elif role == "score" and score_i is None:
+                score_i = j
+
+        if credit_i is not None:
+            cr = credit_i
+
+        if term_i is not None:
+            se = term_i
+
+        if score_i is not None:
+            gr = score_i
+
     records = []
 
     # --------------------------------------------------------
-    # 逐行解析
+    # 第三步：逐行解析课程
     # --------------------------------------------------------
 
     for row in cleaned[
@@ -512,6 +582,7 @@ def parse_rows(rows):
             se if se is not None else 0,
         ) + 1
 
+        # 如果某一行列数不足，用空字符串补齐
         row = row + [
             ""
         ] * max(
@@ -528,22 +599,34 @@ def parse_rows(rows):
         raw = row[gr]
 
         if se is not None:
+
             semester = semester_value(
                 row[se]
             )
+
         else:
+
             semester = None
 
         score = grade_value(
             raw
         )
 
+        # ----------------------------------------------------
+        # 无效记录跳过
+        # ----------------------------------------------------
+
         if (
-            not is_valid_course_name(course)
+            not course
             or credit is None
             or score is None
         ):
+
             continue
+
+        # ----------------------------------------------------
+        # 保存有效课程
+        # ----------------------------------------------------
 
         records.append(
             {
@@ -555,11 +638,48 @@ def parse_rows(rows):
             }
         )
 
-    records = fix_special_courses(
-        records
-    )
+    # --------------------------------------------------------
+    # 第四步：特殊处理第一外国语（硕士英语II）
+    # --------------------------------------------------------
+    #
+    # 实际成绩单中：
+    #
+    # 第一外国语（硕士英语II）
+    # 记录1 -> 0学分
+    # 记录2 -> 3学分
+    #
+    # 实际应该：
+    #
+    # 记录1 -> 1.5学分
+    # 记录2 -> 1.5学分
+    #
+    # 因此两条记录统一修正为1.5学分。
+    # --------------------------------------------------------
+
+    for record in records:
+
+        course_name = norm(
+            str(
+                record["课程名称"]
+            )
+        )
+
+        if (
+            "第一外国语" in course_name
+            and (
+                "硕士英语II" in course_name
+                or "硕士英语Ⅱ" in course_name
+            )
+        ):
+
+            record["学分"] = 1.5
+
+    # --------------------------------------------------------
+    # 第五步：检查是否成功识别课程
+    # --------------------------------------------------------
 
     if not records:
+
         raise ValueError(
             "未识别到有效课程成绩。"
         )
@@ -594,15 +714,10 @@ def parse_docx(data):
 
 
 # ============================================================
-# PDF：第一种方法——表格解析
+# PDF 解析
 # ============================================================
 
-def parse_pdf_tables(data):
-    """
-    使用 pdfplumber 的 extract_tables() 解析 PDF。
-
-    这是第一层方法。
-    """
+def parse_pdf(data):
 
     rows = []
 
@@ -619,421 +734,11 @@ def parse_pdf_tables(data):
 
             for table in tables:
 
-                if not table:
-                    continue
-
                 rows.extend(
                     table
                 )
 
-    if not rows:
-        return []
-
-    try:
-        return parse_rows(
-            rows
-        )
-    except Exception:
-        return []
-
-
-# ============================================================
-# PDF：第二种方法——文本行解析
-# ============================================================
-
-def parse_pdf_text(data):
-    """
-    针对江苏科技大学成绩单 PDF 的文本结构进行解析。
-
-    由于 PDF 表格列位置可能发生错位，
-    这里不依赖 extract_tables() 的列索引，
-    而是从每一行文本中识别：
-
-        课程名称
-        学时
-        学分
-        学期
-        成绩
-        备注
-
-    例如：
-
-        精细化工工艺 32 2.0 1 93.00 正常
-
-    """
-
-    records = []
-
-    with pdfplumber.open(
-        io.BytesIO(data)
-    ) as pdf:
-
-        for page in pdf.pages:
-
-            text = page.extract_text(
-                x_tolerance=2,
-                y_tolerance=3,
-            )
-
-            if not text:
-                continue
-
-            lines = text.splitlines()
-
-            for line in lines:
-
-                line = line.strip()
-
-                if not line:
-                    continue
-
-                # ------------------------------------------------
-                # 排除表头、统计信息
-                # ------------------------------------------------
-
-                if (
-                    "课程名称" in line
-                    or "课程名" in line
-                    or "学时" in line
-                    or "学分" in line
-                    or "成绩" in line
-                    or "培养环节名称" in line
-                    or "成绩管理部门" in line
-                    or "打印时间" in line
-                ):
-                    continue
-
-                # ------------------------------------------------
-                # 排除学生基本信息
-                # ------------------------------------------------
-
-                if (
-                    "学号" in line
-                    or "姓名" in line
-                    or "性别" in line
-                    or "学制" in line
-                    or "学院" in line
-                    or "专业" in line
-                    or "入学日期" in line
-                    or "导师姓名" in line
-                ):
-                    continue
-
-                # ------------------------------------------------
-                # 清理 PDF 中可能存在的多余空格
-                # ------------------------------------------------
-
-                line = re.sub(
-                    r"\s+",
-                    " ",
-                    line,
-                ).strip()
-
-                # ------------------------------------------------
-                # 关键模式
-                #
-                # 课程名称 + 学时 + 学分 + 学期 + 成绩
-                #
-                # 示例：
-                #
-                # 精细化工工艺 32 2.0 1 93.00 正常
-                #
-                # 催化理论与研究方法 32 2.0 1 良好 正常
-                # ------------------------------------------------
-
-                pattern = re.compile(
-                    r"^(.*?)\s+"
-                    r"(\d+(?:\.\d+)?)\s+"
-                    r"(\d+(?:\.\d+)?)\s+"
-                    r"([12])\s+"
-                    r"(优秀|优|良好|良|中|及格|不及格|-?\d+(?:\.\d+)?)"
-                    r"(?:\s+正常)?$"
-                )
-
-                m = pattern.match(
-                    line
-                )
-
-                if not m:
-                    continue
-
-                course = m.group(1).strip()
-                hours = m.group(2)
-                credit = m.group(3)
-                semester = m.group(4)
-                raw_score = m.group(5)
-
-                if not is_valid_course_name(
-                    course
-                ):
-                    continue
-
-                credit_num = credit_value(
-                    credit
-                )
-
-                score_num = grade_value(
-                    raw_score
-                )
-
-                if (
-                    credit_num is None
-                    or score_num is None
-                ):
-                    continue
-
-                records.append(
-                    {
-                        "课程名称": course,
-                        "学分": credit_num,
-                        "原始成绩": raw_score,
-                        "换算成绩": score_num,
-                        "学期": int(
-                            semester
-                        ),
-                    }
-                )
-
-    return fix_special_courses(
-        records
-    )
-
-
-# ============================================================
-# PDF：第三种方法——基于文字坐标的解析
-# ============================================================
-
-def parse_pdf_words(data):
-    """
-    PDF 最后备用解析方案。
-
-    使用 extract_words() 获取文字坐标，
-    根据每一行的 y 坐标重新组合文字。
-
-    主要解决某些 PDF 中：
-    extract_tables() 列错位，
-    extract_text() 行结构异常的问题。
-    """
-
-    records = []
-
-    with pdfplumber.open(
-        io.BytesIO(data)
-    ) as pdf:
-
-        for page in pdf.pages:
-
-            words = page.extract_words(
-                x_tolerance=2,
-                y_tolerance=3,
-                keep_blank_chars=False,
-            )
-
-            if not words:
-                continue
-
-            # ------------------------------------------------
-            # 按 y 坐标聚合成行
-            # ------------------------------------------------
-
-            lines = []
-
-            for word in words:
-
-                top = float(
-                    word.get(
-                        "top",
-                        0,
-                    )
-                )
-
-                placed = False
-
-                for line in lines:
-
-                    if abs(
-                        line["top"] - top
-                    ) <= 3:
-
-                        line["words"].append(
-                            word
-                        )
-
-                        placed = True
-                        break
-
-                if not placed:
-
-                    lines.append(
-                        {
-                            "top": top,
-                            "words": [
-                                word
-                            ],
-                        }
-                    )
-
-            lines.sort(
-                key=lambda x: x["top"]
-            )
-
-            # ------------------------------------------------
-            # 每一行重新按照 x 排序
-            # ------------------------------------------------
-
-            for line in lines:
-
-                ws = sorted(
-                    line["words"],
-                    key=lambda x: float(
-                        x.get(
-                            "x0",
-                            0,
-                        )
-                    ),
-                )
-
-                text = " ".join(
-                    w["text"]
-                    for w in ws
-                )
-
-                text = re.sub(
-                    r"\s+",
-                    " ",
-                    text,
-                ).strip()
-
-                if not text:
-                    continue
-
-                # 同 parse_pdf_text 的课程模式
-                pattern = re.compile(
-                    r"^(.*?)\s+"
-                    r"(\d+(?:\.\d+)?)\s+"
-                    r"(\d+(?:\.\d+)?)\s+"
-                    r"([12])\s+"
-                    r"(优秀|优|良好|良|中|及格|不及格|-?\d+(?:\.\d+)?)"
-                    r"(?:\s+正常)?$"
-                )
-
-                m = pattern.match(
-                    text
-                )
-
-                if not m:
-                    continue
-
-                course = m.group(1).strip()
-                credit = m.group(3)
-                semester = m.group(4)
-                raw_score = m.group(5)
-
-                if not is_valid_course_name(
-                    course
-                ):
-                    continue
-
-                credit_num = credit_value(
-                    credit
-                )
-
-                score_num = grade_value(
-                    raw_score
-                )
-
-                if (
-                    credit_num is None
-                    or score_num is None
-                ):
-                    continue
-
-                records.append(
-                    {
-                        "课程名称": course,
-                        "学分": credit_num,
-                        "原始成绩": raw_score,
-                        "换算成绩": score_num,
-                        "学期": int(
-                            semester
-                        ),
-                    }
-                )
-
-    return fix_special_courses(
-        records
-    )
-
-
-# ============================================================
-# PDF 总解析器
-# ============================================================
-
-def parse_pdf(data):
-    """
-    PDF 多策略解析。
-
-    优先级：
-
-    1. 表格解析
-    2. 文本行解析
-    3. 坐标文字解析
-
-    只要成功识别出合理课程，就返回。
-    """
-
-    # --------------------------------------------------------
-    # 方法 1：extract_tables
-    # --------------------------------------------------------
-
-    records = parse_pdf_tables(
-        data
-    )
-
-    if records:
-
-        # 基本质量检查
-        valid_count = sum(
-            1
-            for r in records
-            if (
-                r.get("学分") is not None
-                and r.get("换算成绩") is not None
-                and r.get("学期") in [1, 2]
-            )
-        )
-
-        if valid_count >= 3:
-            return records
-
-    # --------------------------------------------------------
-    # 方法 2：extract_text
-    # --------------------------------------------------------
-
-    records = parse_pdf_text(
-        data
-    )
-
-    if records:
-
-        if len(records) >= 3:
-            return records
-
-    # --------------------------------------------------------
-    # 方法 3：extract_words
-    # --------------------------------------------------------
-
-    records = parse_pdf_words(
-        data
-    )
-
-    if records:
-        return records
-
-    raise ValueError(
-        "PDF 成绩单解析失败。"
-        "请确认 PDF 是江苏科技大学研究生管理系统导出的成绩单。"
-    )
+    return parse_rows(rows)
 
 
 # ============================================================
@@ -1086,46 +791,6 @@ def convert_doc(data):
 
 
 # ============================================================
-# 检查成绩单数据
-# ============================================================
-
-def validate_records(records):
-    """
-    对解析结果做基本质量检查。
-    """
-
-    if not records:
-        return False
-
-    valid = 0
-
-    for record in records:
-
-        credit = record.get(
-            "学分"
-        )
-
-        score = record.get(
-            "换算成绩"
-        )
-
-        semester = record.get(
-            "学期"
-        )
-
-        if (
-            credit is not None
-            and 0 <= credit <= 10
-            and score is not None
-            and 0 <= score <= 100
-            and semester in [1, 2]
-        ):
-            valid += 1
-
-    return valid >= 3
-
-
-# ============================================================
 # 上传文件后的主要计算流程
 # ============================================================
 
@@ -1174,19 +839,7 @@ if uploaded:
                 )
 
             # ------------------------------------------------
-            # 数据质量检查
-            # ------------------------------------------------
-
-            if not validate_records(
-                records
-            ):
-                raise ValueError(
-                    "成绩单解析结果异常，"
-                    "请检查 PDF/DOCX 格式。"
-                )
-
-            # ------------------------------------------------
-            # DataFrame
+            # 转为 DataFrame
             # ------------------------------------------------
 
             all_df = pd.DataFrame(
@@ -1194,8 +847,7 @@ if uploaded:
             )
 
             # ------------------------------------------------
-            # 第一学年：
-            # 第1、2学期
+            # 第1、2学期 = 第一学年
             # ------------------------------------------------
 
             if all_df[
@@ -1203,9 +855,7 @@ if uploaded:
             ].notna().any():
 
                 calc_df = all_df[
-                    all_df[
-                        "学期"
-                    ].isin(
+                    all_df["学期"].isin(
                         [
                             1,
                             2,
@@ -1213,13 +863,9 @@ if uploaded:
                     )
                 ].copy()
 
-                if len(
-                    calc_df
-                ) == 0:
+                if len(calc_df) == 0:
 
-                    calc_df = (
-                        all_df.copy()
-                    )
+                    calc_df = all_df.copy()
 
                     st.warning(
                         "未能可靠识别第一学年，"
@@ -1234,9 +880,7 @@ if uploaded:
 
             else:
 
-                calc_df = (
-                    all_df.copy()
-                )
+                calc_df = all_df.copy()
 
                 st.warning(
                     "成绩单缺少可识别的学期信息，"
@@ -1244,18 +888,12 @@ if uploaded:
                 )
 
             # ------------------------------------------------
-            # 成绩 × 学分
+            # 计算：成绩 × 学分
             # ------------------------------------------------
 
-            calc_df[
-                "成绩×学分"
-            ] = (
-                calc_df[
-                    "换算成绩"
-                ]
-                * calc_df[
-                    "学分"
-                ]
+            calc_df["成绩×学分"] = (
+                calc_df["换算成绩"]
+                * calc_df["学分"]
             )
 
             # ------------------------------------------------
@@ -1263,9 +901,7 @@ if uploaded:
             # ------------------------------------------------
 
             total_credit = float(
-                calc_df[
-                    "学分"
-                ].sum()
+                calc_df["学分"].sum()
             )
 
             # ------------------------------------------------
@@ -1273,9 +909,7 @@ if uploaded:
             # ------------------------------------------------
 
             weighted = float(
-                calc_df[
-                    "成绩×学分"
-                ].sum()
+                calc_df["成绩×学分"].sum()
             )
 
             # ------------------------------------------------
@@ -1295,6 +929,9 @@ if uploaded:
 
             # ------------------------------------------------
             # 绩点
+            #
+            # 公式：
+            # 绩点 = B / 10 - 5
             # ------------------------------------------------
 
             grade_point = (
@@ -1305,25 +942,9 @@ if uploaded:
             # 结果显示
             # =================================================
 
-            st.markdown(
-                f"""
-                <div class="result-card">
 
-                    <div class="result-label">
-                        加权成绩 B
-                    </div>
-
-                    <div class="result-number">
-                        {B:.2f}
-                    </div>
-
-                    <div class="result-point">
-                        绩点：{grade_point:.3f}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.write(
+                f"加权成绩 B：{B:.2f}；绩点：{grade_point:.3f}"
             )
 
             # =================================================
@@ -1348,7 +969,7 @@ if uploaded:
             )
 
             # =================================================
-            # 识别结果检查
+            # 识别明细
             # =================================================
 
             st.subheader(
@@ -1358,7 +979,6 @@ if uploaded:
             show = calc_df[
                 [
                     "课程名称",
-                    "学期",
                     "学分",
                     "原始成绩",
                     "换算成绩",
@@ -1367,28 +987,25 @@ if uploaded:
             ].copy()
 
             # ------------------------------------------------
-            # 格式化
+            # 保留合理的小数位
             # ------------------------------------------------
 
             show["学分"] = show[
                 "学分"
             ].map(
-                lambda x:
-                f"{x:.2f}"
+                lambda x: f"{x:.2f}"
             )
 
             show["换算成绩"] = show[
                 "换算成绩"
             ].map(
-                lambda x:
-                f"{x:.2f}"
+                lambda x: f"{x:.2f}"
             )
 
             show["成绩×学分"] = show[
                 "成绩×学分"
             ].map(
-                lambda x:
-                f"{x:.2f}"
+                lambda x: f"{x:.2f}"
             )
 
             st.dataframe(
@@ -1396,45 +1013,6 @@ if uploaded:
                 use_container_width=True,
                 hide_index=True,
             )
-
-            # =================================================
-            # PDF 解析诊断
-            # =================================================
-
-            if suffix == ".pdf":
-
-                with st.expander(
-                    "🔍 PDF 解析检查",
-                    expanded=False,
-                ):
-
-                    st.write(
-                        f"成功识别课程：{len(all_df)} 门"
-                    )
-
-                    st.write(
-                        f"识别总学分："
-                        f"{all_df['学分'].sum():.2f}"
-                    )
-
-                    st.write(
-                        "如果这里的课程、学分、成绩均正确，"
-                        "则计算结果可以直接使用。"
-                    )
-
-                    st.dataframe(
-                        all_df[
-                            [
-                                "课程名称",
-                                "学分",
-                                "原始成绩",
-                                "换算成绩",
-                                "学期",
-                            ]
-                        ],
-                        use_container_width=True,
-                        hide_index=True,
-                    )
 
             # =================================================
             # 下载计算明细
@@ -1488,4 +1066,4 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True,
-)
+) 
