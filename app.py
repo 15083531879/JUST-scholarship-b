@@ -819,28 +819,9 @@ if uploaded:
             # 结果显示
             # =================================================
 
-            st.markdown(
-                f"""
-                <div class="result-card">
 
-                    <div class="result-label">
-                        研究生奖学金成绩计算结果
-                    </div>
-
-                    <div class="result-number">
-                        加权成绩 B：{B:.2f}
-                    </div>
-
-                    <div class="result-point">
-                        绩点：
-                        <strong>
-                            {grade_point:.3f}
-                        </strong>
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.write(
+                f"加权成绩 B：{B:.2f}；绩点：{grade_point:.3f}"
             )
 
             # =================================================
